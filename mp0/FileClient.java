@@ -47,7 +47,7 @@ public class FileClient {
 
 		        while (!line.equals("END")) {
 					sb.append(line);
-					sb.append(System.lineSeparator());
+					sb.append(System.getProperty("line.separator"));
 					line = in.readLine();
 		        }
 				content = sb.deleteCharAt(sb.length()-1).toString();

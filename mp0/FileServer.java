@@ -28,7 +28,7 @@ class FileServerThread extends Thread {
 
 	        while (line != null) {
 	            sb.append(line);
-	            sb.append(System.lineSeparator());
+	            sb.append(System.getProperty("line.separator"));
 	            line = br.readLine();
 	        }
 	        everything = sb.toString();
