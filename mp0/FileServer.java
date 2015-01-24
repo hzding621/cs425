@@ -20,9 +20,9 @@ class FileServerThread extends Thread {
 	String readFileForClient(String filename) {
 
 		String everything = null;
-	    try (
-	    	BufferedReader br = new BufferedReader(new FileReader(filename));
-	    ){	
+		BufferedReader br = null;
+	    try {	
+	    	br = new BufferedReader(new FileReader(filename));
 	        StringBuilder sb = new StringBuilder();
 	        String line = br.readLine();
 
@@ -39,6 +39,13 @@ class FileServerThread extends Thread {
 	    }
 	    catch (IOException e){
 	    	System.err.println("File read error.");
+	    } finally {
+	    	try {
+	    		br.close();
+	    	}	
+	    	catch (IOException e){
+		    	System.err.println("Close error");
+	    	}
 	    }
 	    return everything;
 	}
