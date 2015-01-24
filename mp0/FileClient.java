@@ -12,17 +12,20 @@ public class FileClient {
         String hostName = args[0];
         int portNumber = Integer.parseInt(args[1]);
         
+        Socket socket = null;
+        BufferedReader in = null;
+        PrintWriter out = null;
 
-        try (
-        	Socket socket = new Socket(hostName, portNumber);
+        try 
+        {
+        	socket = new Socket(hostName, portNumber);
 			  
-			BufferedReader in = new BufferedReader( new InputStreamReader(
+			in = new BufferedReader( new InputStreamReader(
 			    socket.getInputStream()));
 			// Enable auto-flush:
-			PrintWriter out = new PrintWriter( new BufferedWriter( new OutputStreamWriter(
+			out = new PrintWriter( new BufferedWriter( new OutputStreamWriter(
 				socket.getOutputStream())), true);
-        )
-        {
+
 
         	System.out.println("client: connecting to " + hostName);
 	
@@ -68,6 +71,14 @@ public class FileClient {
                 hostName);
             System.exit(1);
         } 
+        finally {
+        	try {
+        		socket.close();
+        	}
+        	catch (IOException e) {
+        		System.out.println("Close failure");
+        	}
+        }
 
 	}
 	
