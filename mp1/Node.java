@@ -18,8 +18,8 @@ public class Node {
 	public static void main(String[] args) {
 		if (args.length != 2) {
 			System.err.println(
-                "Usage: java Node <node number> <config file>");
-            System.exit(1);
+				"Usage: java Node <node number> <config file>");
+			System.exit(1);
 		}
 		config = args[1];
 
@@ -54,7 +54,7 @@ public class Node {
 			System.exit(1);
 		} catch (IOException e) {
 			System.err.println("Couldn't get I/O for the connection to 127.0.0.1");
-            System.exit(1);
+			System.exit(1);
 		}
 
 		if (!ports.containsKey(MY_NODE_NUM) || !delays.containsKey(MY_NODE_NUM)) {
@@ -73,32 +73,32 @@ public class Node {
 		// Accept user command and send to controller through socket
 		Scanner stdIn = new Scanner(System.in);
 		stdIn.useDelimiter(System.getProperty("line.separator"));
-        while (stdIn.hasNext()) {
+		while (stdIn.hasNext()) {
 
-        	String userCommand = stdIn.next();
-        	String[] cmds = userCommand.split(" ");
-        	if (cmds.length != 3 || !cmds[0].equals("Send")) {
-        		System.out.println("User command unknown.");
-        		continue;
-        	}
-        	String message = cmds[1];
-        	int toNode = Integer.parseInt(cmds[2]);
-        	int fromNode = MY_NODE_NUM;
-        	try (
-	            Socket socket = new Socket("127.0.0.1", CONTROLLER_PORT);
-	            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-	        ) {
-        		out.println(fromNode+";"+toNode+";"+message+";");
-        		socket.close();
-        		Time curTime = new Time(System.currentTimeMillis());
-	        	System.out.println("Sent " + message + " to " + toNode + ", system time is " + curTime.toString() ) ;
-	        } catch (UnknownHostException e) {
-	            System.err.println("Unknown Host");
-	        } catch (IOException e) {
-	            System.err.println("Controller Connection Failure. Command Ignored.");
-	            // Simply ignore the user command 
-	        } 
-        }
+			String userCommand = stdIn.next();
+			String[] cmds = userCommand.split(" ");
+			if (cmds.length != 3 || !cmds[0].equals("Send")) {
+				System.out.println("User command unknown.");
+				continue;
+			}
+			String message = cmds[1];
+			int toNode = Integer.parseInt(cmds[2]);
+			int fromNode = MY_NODE_NUM;
+			try (
+				Socket socket = new Socket("127.0.0.1", CONTROLLER_PORT);
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			) {
+				out.println(fromNode+";"+toNode+";"+message+";");
+				socket.close();
+				Time curTime = new Time(System.currentTimeMillis());
+				System.out.println("Sent " + message + " to " + toNode + ", system time is " + curTime.toString() ) ;
+			} catch (UnknownHostException e) {
+				System.err.println("Unknown Host");
+			} catch (IOException e) {
+				System.err.println("Controller Connection Failure. Command Ignored.");
+				// Simply ignore the user command 
+			} 
+		}
 		
 	}
 }

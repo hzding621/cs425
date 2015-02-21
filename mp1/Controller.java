@@ -26,15 +26,15 @@ public class Controller {
 		// Initiate client and conenct to toNode
 		try (
 			Socket socket = new Socket("127.0.0.1", ports.get(toNode));
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 		) {
 			out.println(message);
 		} catch (UnknownHostException e) {
-            System.err.println("Unknown Host");
-        } catch (IOException e) {
-            System.err.println("Node connection failure. Message dumped.");
-            // Simply dump the message
-        }
+			System.err.println("Unknown Host");
+		} catch (IOException e) {
+			System.err.println("Node connection failure. Message dumped.");
+			// Simply dump the message
+		}
 	}
 
 	public static void main(String[] args) {
