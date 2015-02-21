@@ -5,5 +5,5 @@ mp0:
 File Server
 
 mp1: 
-(Part1) Implementation of a delayed FIFO-channel. 
+(Part1) Implementation of a delayed FIFO-channel networks. 
 (Part2) Key-Value Store of different consistency model: Linearizabiltiy, Sequential Consistency, Eventual Consistency
