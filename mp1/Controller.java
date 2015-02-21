@@ -24,7 +24,6 @@ public class Controller {
 
 	public static void deliverMessage(int toNode, String message) {
 		// Initiate client and conenct to toNode
-		// @todo
 		try (
 			Socket socket = new Socket("127.0.0.1", ports.get(toNode));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -48,6 +47,7 @@ public class Controller {
 		}
 		if (args.length == 1)
 			config = args[0];
+
 		// Read parameters from config file
 		ports = new HashMap<Integer, Integer>();
 		try (
@@ -80,8 +80,8 @@ public class Controller {
 			System.exit(1);
 		}
 
-		// System.out.println("Node Number = " + NODE_NUM);
 
+		// Initialize the channel threads
 		channels = new ArrayList<ArrayList<ControllerChannel>>();
 		for (int i=0; i<NODE_NUM; i++) {
 			channels.add(new ArrayList<ControllerChannel>());
@@ -96,15 +96,14 @@ public class Controller {
 			}
 		}
 		
+		// Listens to Node connections and enqueue messages
 		try (ServerSocket serverSocket = new ServerSocket(CONTROLLER_PORT)) { 
 			System.out.println("Controller listens at port " + CONTROLLER_PORT);
 			while (true) {
 				Socket socket = serverSocket.accept();
 
-				// connection to Controller is sequential
-
+				// Controller accpets node connection sequentially
 				try (
-					// PrintWriter out = new PrintWriter(socket.getOutputStream(), true); 
 					BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				) {
 					String message = in.readLine();
@@ -112,23 +111,7 @@ public class Controller {
 					String[] messageLines = message.split(";");
 					int fromNode = Integer.parseInt(messageLines[0]);
 					int toNode = Integer.parseInt(messageLines[1]);
-					// String msgContent = messageLines[3];
-					
-					ControllerChannel c = getChannel(fromNode, toNode);
-					long lastDeliveryTime = c.getLastDeliveryTime();     
-					long randomDelay = getRandomDelay();
-					long currentTime = System.currentTimeMillis();
-					long actualDelay = randomDelay;
-					if (lastDeliveryTime != -1) // normalize time according to previous message
-						actualDelay = Math.max(0, currentTime+randomDelay-lastDeliveryTime);
-					c.setLastDeliveryTime(actualDelay+currentTime);
-					try {
-						c.getQueue().putLast(new ControllerWaitingThread(actualDelay+currentTime, actualDelay, message));
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-						System.exit(1);
-					}
-
+					getChannel(fromNode, toNode).enqueueMessage(message);
 
 				} catch (IOException e) {
 					e.printStackTrace();
