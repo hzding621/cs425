@@ -7,15 +7,15 @@ public class Controller {
 	private static String config = "config.txt";
 	private static int CONTROLLER_PORT = 8888;
 	private static int NODE_NUM = 4;
-	private static long MAX_DELAY = 10000;
 
 	private static Random r = new Random();
 	public static ArrayList<ArrayList<ControllerChannel>> channels = null;
 
 	public static HashMap<Integer, Integer> ports = null;
+	public static HashMap<Integer, Integer> delays = null;
 
-	public static long getRandomDelay() {
-		return r.nextLong() % MAX_DELAY;
+	public static long getRandomDelay(int toNode) {
+		return r.nextLong() % ( delays.get(toNode) / 2) + delays.get(toNode) / 2;
 	}
 
 	public static ControllerChannel getChannel(int fromNode, int toNode) {
@@ -30,26 +30,24 @@ public class Controller {
 		) {
 			out.println(message);
 		} catch (UnknownHostException e) {
-            System.err.println("Don't know about host ");
-            System.exit(1);
+            System.err.println("Unknown Host");
         } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection");
-            System.exit(1);
+            System.err.println("Node connection failure. Message dumped.");
+            // Simply dump the message
         }
 	}
 
 	public static void main(String[] args) {
 		
-		if (args.length > 1) {
+		if (args.length != 1) {
 			System.err.println(
 				"Usage: java CentralServer [config file]");
 			System.exit(1);
 		}
-		if (args.length == 1)
-			config = args[0];
 
 		// Read parameters from config file
 		ports = new HashMap<Integer, Integer>();
+		delays = new HashMap<Integer, Integer>();
 		try (
 			BufferedReader br = new BufferedReader(new FileReader(config))
 		) {
@@ -60,8 +58,12 @@ public class Controller {
 					CONTROLLER_PORT = Integer.parseInt(params[1]);
 				if (params[0].equals("NODE_NUM"))
 					NODE_NUM = Integer.parseInt(params[1]);
-				if (params[0].equals("MAX_DELAY"))
-					MAX_DELAY = Integer.parseInt(params[1]);
+				if (params[0].equals("MAX_DELAY")) {
+					String[] p = params[1].split(",");
+					for (int i=0; i<p.length; i++) {
+						delays.put(i, Integer.parseInt(p[i]));
+					}
+				}
 				if (params[0].equals("PORTS")) {
 					String[] p = params[1].split(",");
 					for (int i=0; i<p.length; i++) {
@@ -86,13 +88,12 @@ public class Controller {
 		for (int i=0; i<NODE_NUM; i++) {
 			channels.add(new ArrayList<ControllerChannel>());
 			for (int j=0; j<NODE_NUM; j++) {
-				if (j != i) {
-					ControllerChannel t = new ControllerChannel(i, j);
-					channels.get(i).add(t);
-					t.start();
-				}
-				else 
-					channels.get(i).add(null);
+
+				// Also create self-communication channels
+				ControllerChannel t = new ControllerChannel(i, j);
+				channels.get(i).add(t);
+				t.start();
+				
 			}
 		}
 		

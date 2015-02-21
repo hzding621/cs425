@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.sql.*;
 
 public class ControllerChannel extends Thread {
 
@@ -14,12 +15,25 @@ public class ControllerChannel extends Thread {
         // This method is called from Controller Thread
         // Sequential call of this method is guaranteed, 
         // so there won't be race condition of using the previousScheduledTime value
-        long r = Controller.getRandomDelay();
+        long r = Controller.getRandomDelay(toNode);
         long currentTime = System.currentTimeMillis();
+        Time t1 = new Time(currentTime);
+        System.out.println();
         long actualDelay = r;
         if (currentTime < previousScheduledTime) // normalize time according to previous message
             actualDelay = Math.max(0, currentTime+r-previousScheduledTime);
-        previousScheduledTime = actualDelay+currentTime;
+
+        if (previousScheduledTime < currentTime)
+            previousScheduledTime = currentTime + actualDelay;
+        else 
+            previousScheduledTime = actualDelay+previousScheduledTime;
+        Time t = new Time(previousScheduledTime);
+        System.out.println( "M:" + msg +
+                            " EnQ:" + t1.toString() + 
+                            " r:"+ r + 
+                            " actualDelay:" + actualDelay + 
+                            " scheduledTime:" + t.toString()
+                            );
         try {
             // this will never block because all puts are sequential
             q.putLast(new ControllerChannelMessage(actualDelay+currentTime, actualDelay, msg));
