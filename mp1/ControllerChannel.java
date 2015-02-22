@@ -28,7 +28,8 @@ public class ControllerChannel extends Thread {
 		else 
 			previousScheduledTime = actualDelay+previousScheduledTime;
 		Time t = new Time(previousScheduledTime);
-		System.out.println( "M:" + msg +
+		System.out.println( fromNode + "->" + toNode +
+							" M:" + msg +
 							" EnQ:" + t1.toString() + 
 							" r:"+ r + 
 							" actualDelay:" + actualDelay + 
@@ -36,7 +37,7 @@ public class ControllerChannel extends Thread {
 							);
 		try {
 			// this will never block because all puts are sequential
-			q.putLast(new ControllerChannelMessage(actualDelay+currentTime, actualDelay, msg));
+			q.putLast(new ControllerChannelMessage(actualDelay+currentTime, actualDelay, msg, fromNode, toNode));
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -67,7 +68,7 @@ public class ControllerChannel extends Thread {
 				e.printStackTrace();
 				System.exit(1);
 			} 
-			Controller.deliverMessage(toNode, msg); // here is sequential
+			Controller.deliverMessage(fromNode, toNode, msg); // here is sequential
 		}
 	}
 }

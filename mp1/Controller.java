@@ -25,13 +25,13 @@ public class Controller {
 		return channels.get(fromNode).get(toNode);
 	}
 
-	public static void deliverMessage(int toNode, String message) {
+	public static void deliverMessage(int fromNode, int toNode, String message) {
 		// Initiate client and conenct to toNode
 		try (
 			Socket socket = new Socket("127.0.0.1", ports.get(toNode));
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 		) {
-			out.println(message);
+			out.println(fromNode+";"+toNode+";"+message+";");
 		} catch (UnknownHostException e) {
 			System.err.println("Unknown Host");
 		} catch (IOException e) {
@@ -115,7 +115,14 @@ public class Controller {
 					String[] messageLines = message.split(";");
 					int fromNode = Integer.parseInt(messageLines[0]);
 					int toNode = Integer.parseInt(messageLines[1]);
-					getChannel(fromNode, toNode).enqueueMessage(message);
+					String msg = messageLines[messageLines.length-1];
+					if (toNode >= 0)
+						getChannel(fromNode, toNode).enqueueMessage(msg);
+					else {
+						//broadcast
+						for (int i=0; i<NODE_NUM; i++)
+							getChannel(fromNode, i).enqueueMessage(msg);
+					}
 
 				} catch (IOException e) {
 					e.printStackTrace();

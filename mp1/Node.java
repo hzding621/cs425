@@ -91,7 +91,12 @@ public class Node {
 				out.println(fromNode+";"+toNode+";"+message+";");
 				socket.close();
 				Time curTime = new Time(System.currentTimeMillis());
-				System.out.println("Sent " + message + " to " + toNode + ", system time is " + curTime.toString() ) ;
+				if (toNode >= 0)
+					System.out.println("Sent \"" + message + "\" to " + toNode + ", system time is " + curTime.toString() ) ;
+				else {
+					// broadcast
+					System.out.println("Broadcast \"" + message + "\", system time is " + curTime.toString() );
+				}
 			} catch (UnknownHostException e) {
 				System.err.println("Unknown Host");
 			} catch (IOException e) {
