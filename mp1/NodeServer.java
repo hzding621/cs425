@@ -6,16 +6,20 @@ import java.sql.*;
 
 public class NodeServer extends Thread {
 
+	private int nodeNum;
 	private int port;
 	private int maxDelay;
 
-	public NodeServer(int p, int d) {
+	public NodeServer(int n, int p, int d) {
+		nodeNum = n;
 		port = p;
 		maxDelay = d;
 	}
 
 	public void run() {
 		try (ServerSocket serverSocket = new ServerSocket(port)) { 
+			System.out.println("Node "+nodeNum+" listens at port "+port);
+
 			while (true) {
 				Socket socket = serverSocket.accept();
 
@@ -29,8 +33,10 @@ public class NodeServer extends Thread {
 					int fromNode = Integer.parseInt(messageLines[0]);
 					String messageContent = messageLines[2];
 					Time curTime = new Time(System.currentTimeMillis());
+
+					double md = nodeNum == fromNode ? 0 : maxDelay*1.0/1000;
 					System.out.println("Received \"" + messageContent +"\" from " + fromNode +
-												", Max delay is " + maxDelay*1.0/1000 + 
+												", Max delay is " + md + 
 												"s, system time is " + curTime.toString());
 
 				} catch (IOException e) {

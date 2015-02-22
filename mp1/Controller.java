@@ -14,8 +14,11 @@ public class Controller {
 	public static HashMap<Integer, Integer> ports = null;
 	public static HashMap<Integer, Integer> delays = null;
 
-	public static long getRandomDelay(int toNode) {
-		return r.nextLong() % ( delays.get(toNode) / 2) + delays.get(toNode) / 2;
+	public static long getRandomDelay(int fromNode, int toNode) {
+		if (fromNode == toNode)
+			return 0;
+		else
+			return r.nextLong() % ( delays.get(toNode) / 2) + delays.get(toNode) / 2;
 	}
 
 	public static ControllerChannel getChannel(int fromNode, int toNode) {

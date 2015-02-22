@@ -66,7 +66,7 @@ public class Node {
 		// Start node server thread
 		MY_NODE_PORT = ports.get(MY_NODE_NUM);
 		MY_MAX_DELAY = delays.get(MY_NODE_NUM);
-		NodeServer server = new NodeServer(MY_NODE_PORT, MY_MAX_DELAY);
+		NodeServer server = new NodeServer(MY_NODE_NUM, MY_NODE_PORT, MY_MAX_DELAY);
 		server.start();
 
 

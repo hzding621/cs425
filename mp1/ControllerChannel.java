@@ -15,7 +15,7 @@ public class ControllerChannel extends Thread {
 		// This method is called from Controller Thread
 		// Sequential call of this method is guaranteed, 
 		// so there won't be race condition of using the previousScheduledTime value
-		long r = Controller.getRandomDelay(toNode);
+		long r = Controller.getRandomDelay(fromNode, toNode);
 		long currentTime = System.currentTimeMillis();
 		Time t1 = new Time(currentTime);
 		System.out.println();
