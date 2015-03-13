@@ -6,13 +6,15 @@ import java.sql.*;
 
 public class Message {
 	public String message;
-	public int sequence;
+	public long dataField;
 	public int fromNode;
+	public int model;
 
-	public Message(String msg, int s, int f) {
+	public Message(String msg, long data, int f, int m) {
 		message = msg;
-		sequence = s;
+		dataField = data;
 		fromNode = f;
+		model = m;
 	}
 
 

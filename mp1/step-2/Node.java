@@ -11,7 +11,7 @@ public class Node {
 
 	private static String config = "config.txt";
 
-	private static int CONTROLLER_PORT = 8888;
+	public static int CONTROLLER_PORT = 8888;
 	private static int MY_NODE_PORT = - 1;
 	private static int MY_NODE_NUM = -1;
 	private static int MY_MAX_DELAY = -1;
@@ -20,15 +20,23 @@ public class Node {
 	private static HashMap<Integer, Integer> ports, delays;
 
 	public static Hashtable<Integer, Integer> store = new Hashtable<Integer, Integer>();
+	public static Hashtable<Integer, Long> timestamps = new Hashtable<Integer, Long>();
 
 	public final static Lock lock = new ReentrantLock();
 	public final static Condition shouldProceed = lock.newCondition();
 	public static boolean waitingForResponse = false;
 	public static long lastResponseTime = -1;
 
+	public static long ackTimestamp = -1;
+	public static int currentResponded = 0;
+	public static int needResponded = 0;
+	public static int requestedKey = 0;
+	public static int requestedValue = 0;
+	public static String responseType = "";
+
 	// public final static Lock utilLock = new ReentrantLock();
 	// public final static Condition utilRestart = lock.newCondition();
-	// public static boolean utilHault = false;
+	// public static boolean utilHalt = false;
 
 	public static void main(String[] args) {
 		if (args.length != 2) {

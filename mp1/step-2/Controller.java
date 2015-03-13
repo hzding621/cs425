@@ -14,7 +14,7 @@ public class Controller {
 	public static HashMap<Integer, Integer> ports = null;
 	public static HashMap<Integer, Integer> delays = null;
 
-	private static int sequenceNumber = 0;
+	private static long sequenceNumber = 0;
 
 	public static long getRandomDelay(int fromNode, int toNode) {
 		if (fromNode == toNode)
@@ -115,13 +115,22 @@ public class Controller {
 					String message = in.readLine();
 					socket.close();
 					String[] conts = message.split(";");
-					int fromNode = Integer.parseInt(conts[1]);
-					sequenceNumber++;
-					message = conts[0]+";"+sequenceNumber;
-					//broadcast
-					for (int i=0; i<NODE_NUM; i++)
-						getChannel(fromNode, i).enqueueMessage(message);
-					
+					int fromNode = Integer.parseInt(conts[0]);
+					int toNode = Integer.parseInt(conts[1]);
+					int model = Integer.parseInt(conts[3]);
+
+					if (toNode == -1) {
+						if (model == 1 || model == 2) {
+							sequenceNumber++;
+							message = conts[2]+";"+conts[3]+";"+sequenceNumber;
+						} else if (model == 3 || model == 4) {
+							message = conts[2]+";"+conts[3]+";"+conts[4];
+						}
+						for (int i=0; i<NODE_NUM; i++)
+							getChannel(fromNode, i).enqueueMessage(message);
+					}
+					else 
+						getChannel(fromNode, toNode).enqueueMessage(conts[2]+";"+conts[3]+";0");
 
 				} catch (IOException e) {
 					e.printStackTrace();

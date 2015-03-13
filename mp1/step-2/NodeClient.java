@@ -37,15 +37,14 @@ public class NodeClient extends Thread {
 			try {
 
 				Node.lock.lock();
-				try {
-					while (Node.waitingForResponse) {
-						Node.shouldProceed.await();
-					}
-				} finally {
-					Node.lock.unlock();
+				while (Node.waitingForResponse) {
+					Node.shouldProceed.await();
 				}
+				Node.lock.unlock();
 				
 				String message = q.takeFirst(); // this call blocks if queue is empty
+
+				Node.lock.lock();
 				String[] cmds = message.split(" ");
 
 				if (cmds[0].equals("delay")) {
@@ -60,6 +59,7 @@ public class NodeClient extends Thread {
 						if (DEBUG) System.out.println("Actual delay = 0");
 					}
 					
+					Node.lock.unlock();
 					continue;
 				}
 
@@ -67,27 +67,35 @@ public class NodeClient extends Thread {
 					!cmds[0].equals("insert") &&
 					!cmds[0].equals("update")) {
 					System.out.println("Unknown user command!");
+
+					Node.lock.unlock();
 					continue;
 				}
 
+
+
 				if (cmds[0].equals("get") && cmds.length != 3) {
 					System.out.println("Invalid get command.");
+
+					Node.lock.unlock();
 					continue;
 				}
 
 				if (( cmds[0].equals("insert") || cmds[0].equals("update") ) && cmds.length != 4) {
 					System.out.println("Invalid insert command.");
+
+					Node.lock.unlock();
 					continue;
 				}
 
-				if (cmds[0].equals("get") && !cmds[2].equals("1") && !cmds[2].equals("2") ) {
-					System.out.println("Model "+cmds[2]+" Not Supported Yet.");
-					continue;
-				}
-				if ( (cmds[0].equals("insert") || cmds[0].equals("update") ) && !cmds[3].equals("1") && !cmds[3].equals("2") ) {
-					System.out.println("Model "+cmds[3]+" Not Supported Yet.");
-					continue;
-				}
+				// if (cmds[0].equals("get") && !cmds[2].equals("1") && !cmds[2].equals("2") ) {
+				// 	System.out.println("Model "+cmds[2]+" Not Supported Yet.");
+				// 	continue;
+				// }
+				// if ( (cmds[0].equals("insert") || cmds[0].equals("update") ) && !cmds[3].equals("1") && !cmds[3].equals("2") ) {
+				// 	System.out.println("Model "+cmds[3]+" Not Supported Yet.");
+				// 	continue;
+				// }
 				
 
 				if (cmds[0].equals("get") && cmds[2].equals("2")) {
@@ -100,15 +108,47 @@ public class NodeClient extends Thread {
 					else
 						res = Node.store.get(read);
 					System.out.println("Read("+read+")="+res);
+
+					Node.lock.unlock();
 					continue;
 				}
+
+				int model;
+				
+				
+				if (cmds[0].equals("get"))
+					model = Integer.parseInt(cmds[2]);
+				else 
+					model = Integer.parseInt(cmds[3]);
+
+				if (model == 3) {
+					Node.needResponded = 1;
+				} else if (model == 4) {
+					Node.needResponded = 2;
+				}
+				if (model == 3 || model == 4) {
+					Node.ackTimestamp = System.currentTimeMillis();
+					if (cmds[0].equals("get"))
+						Node.requestedKey = Integer.parseInt(cmds[1]);
+					else if (cmds[0].equals("insert") || cmds[0].equals("update")) {
+						Node.requestedKey = Integer.parseInt(cmds[1]);
+						Node.requestedValue = Integer.parseInt(cmds[2]);
+					}
+					Node.responseType = cmds[0];
+				}
+				Node.waitingForResponse = true;
+				
+				
+				
 
 				try (
 					Socket socket = new Socket("127.0.0.1", controllerPort);
 					PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 				) {
-					Node.waitingForResponse = true;
-					out.println(message+";"+nodeNum);
+					String output = nodeNum+";-1;"+message+";"+model;
+					if (model == 3 || model == 4)
+						output += (";"+Node.ackTimestamp);
+					out.println(output);
 					socket.close();
 
 					if (DEBUG) {
@@ -122,6 +162,8 @@ public class NodeClient extends Thread {
 					System.err.println("Controller Connection Failure. Command Ignored.");
 					// Simply ignore the user command 
 				} 
+
+				Node.lock.unlock();
 
 
 			} catch (InterruptedException e) {
