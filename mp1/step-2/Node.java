@@ -26,6 +26,10 @@ public class Node {
 	public static boolean waitingForResponse = false;
 	public static long lastResponseTime = -1;
 
+	// public final static Lock utilLock = new ReentrantLock();
+	// public final static Condition utilRestart = lock.newCondition();
+	// public static boolean utilHault = false;
+
 	public static void main(String[] args) {
 		if (args.length != 2) {
 			System.err.println(
