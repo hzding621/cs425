@@ -12,6 +12,7 @@ public class NodeServer extends Thread {
 	private int port;
 	private int maxDelay;
 	private int sequenceNumber = 0;
+	
 
 	private PriorityQueue<Message> pq = new PriorityQueue<Message>(2, new MessageComparator());
 
@@ -44,6 +45,7 @@ public class NodeServer extends Thread {
 				Node.lock.lock();
 				try {
 					System.out.println("Read("+read+")="+res);
+					Node.lastResponseTime = System.currentTimeMillis();
 					Node.waitingForResponse = false;
 					Node.shouldProceed.signal();
 				}
@@ -61,6 +63,7 @@ public class NodeServer extends Thread {
 				Node.lock.lock();
 				try {
 					System.out.println("Ack Insert("+key+","+value+")");
+					Node.lastResponseTime = System.currentTimeMillis();
 					Node.waitingForResponse = false;
 					Node.shouldProceed.signal();
 				}
@@ -78,6 +81,7 @@ public class NodeServer extends Thread {
 				Node.lock.lock();
 				try {
 					System.out.println("Ack Update("+key+","+value+")");
+					Node.lastResponseTime = System.currentTimeMillis();
 					Node.waitingForResponse = false;
 					Node.shouldProceed.signal();
 				}

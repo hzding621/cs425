@@ -24,6 +24,7 @@ public class Node {
 	public final static Lock lock = new ReentrantLock();
 	public final static Condition shouldProceed = lock.newCondition();
 	public static boolean waitingForResponse = false;
+	public static long lastResponseTime = -1;
 
 	public static void main(String[] args) {
 		if (args.length != 2) {

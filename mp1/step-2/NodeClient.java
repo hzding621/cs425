@@ -50,8 +50,16 @@ public class NodeClient extends Thread {
 
 				if (cmds[0].equals("delay")) {
 					float t = Float.parseFloat(cmds[1]);
-					int d = (int) (t * 1000);
-					sleep(d);
+					long d = (long) (t * 1000);
+
+					long offs = Node.lastResponseTime + d - System.currentTimeMillis();
+					if (offs > 0) {
+						if (DEBUG) System.out.println("Actual delay = "+offs);
+						Thread.sleep(offs);
+					} else {
+						if (DEBUG) System.out.println("Actual delay = 0");
+					}
+					
 					continue;
 				}
 
