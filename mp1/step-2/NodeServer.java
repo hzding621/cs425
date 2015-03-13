@@ -13,28 +13,74 @@ public class NodeServer extends Thread {
 	private int maxDelay;
 	private int sequenceNumber = 0;
 
-	public HashMap<Integer, Integer> store = new HashMap<Integer, Integer>();
-
-	private PriorityQueue<Message> pq = null;
+	private PriorityQueue<Message> pq = new PriorityQueue<Message>(2, new MessageComparator());
 
 	public NodeServer(int n, int p, int d, boolean debug) {
 		nodeNum = n;
 		port = p;
 		maxDelay = d;
-		pq = new PriorityQueue<Message>(5, new MessageComparator());
 		DEBUG = debug;
 	}
 
 	public void deliver(Message msgObject) {
 		String msg = msgObject.message;
-		int fromNode = msgObject.fromNode;
-		Time curTime = new Time(System.currentTimeMillis());
-		System.out.println("Recevied \"" + msg + "\" from Node " + fromNode +" , system time is " + curTime.toString() );
+		// int fromNode = msgObject.fromNode;
+		if (DEBUG) {
+			Time curTime = new Time(System.currentTimeMillis());
+			System.out.println("Recevied \"" + msg + "\" from Node " + msgObject.fromNode +" , system time is " + curTime.toString() );
+		}
+		String[] cmds = msg.split(" ");
+		if (cmds[0].equals("get")) {
+			if (!cmds[2].equals("1")) {
+				if (msgObject.fromNode==nodeNum)
+					System.out.println("Model "+cmds[2]+" Not Supported Yet.");
+				return;
+			}
+
+			int read = Integer.parseInt(cmds[1]);
+			int res;
+			if (!Node.store.containsKey(read)) {
+				res = 0;
+			}
+			else 
+				res = Node.store.get(read);
+
+			if (msgObject.fromNode==nodeNum) 
+				System.out.println("Read("+read+")="+res);
+		}
+		else if (cmds[0].equals("insert")) {
+			if (!cmds[3].equals("1") && !cmds[3].equals("2")) {
+				if (msgObject.fromNode==nodeNum)
+					System.out.println("Model "+cmds[3]+" Not Supported Yet.");
+				return;
+			}
+
+			int key = Integer.parseInt(cmds[1]);
+			int value = Integer.parseInt(cmds[2]);
+			Node.store.put(key, value);
+
+			if (msgObject.fromNode==nodeNum) 
+				System.out.println("Ack Insert("+key+","+value+")");
+		}
+		else if (cmds[0].equals("update")) {
+			if (!cmds[3].equals("1") && !cmds[3].equals("2")) {
+				if (msgObject.fromNode==nodeNum)
+					System.out.println("Model "+cmds[3]+" Not Supported Yet.");
+				return;
+			}
+
+			int key = Integer.parseInt(cmds[1]);
+			int value = Integer.parseInt(cmds[2]);
+			Node.store.put(key, value);
+
+			if (msgObject.fromNode==nodeNum) 
+				System.out.println("Ack Update("+key+","+value+")");
+		}
 	}
 
 	public void run() {
 		try (ServerSocket serverSocket = new ServerSocket(port)) { 
-			System.out.println("Node "+nodeNum+" listens at port "+port);
+			System.out.println("Node "+nodeNum+" server listens at port "+port);
 
 			while (true) {
 				Socket socket = serverSocket.accept();

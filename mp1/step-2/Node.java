@@ -14,8 +14,11 @@ public class Node {
 	private static int MY_NODE_PORT = - 1;
 	private static int MY_NODE_NUM = -1;
 	private static int MY_MAX_DELAY = -1;
+	private static int TERMINAL_DELAY = 0;
 
 	private static HashMap<Integer, Integer> ports, delays;
+
+	public static Hashtable<Integer, Integer> store = new Hashtable<Integer, Integer>();
 
 	public static void main(String[] args) {
 		if (args.length != 2) {
@@ -51,6 +54,8 @@ public class Node {
 				if (params[0].equals("VERBOSE")) 
 					if (Integer.parseInt(params[1]) == 0)
 						DEBUG_MODE = false;
+				if (params[0].equals("TERMINAL_DELAY"))
+					TERMINAL_DELAY = Integer.parseInt(params[1]);
 				// add more parameters here
 				line = br.readLine();
 			}
@@ -74,6 +79,8 @@ public class Node {
 		NodeServer server = new NodeServer(MY_NODE_NUM, MY_NODE_PORT, MY_MAX_DELAY, DEBUG_MODE);
 		server.start();
 
+		NodeClient client = new NodeClient(TERMINAL_DELAY, CONTROLLER_PORT, MY_NODE_NUM, DEBUG_MODE);
+		client.start();
 
 		// Accept user command and send to controller through socket
 		Scanner stdIn = new Scanner(System.in);
@@ -81,22 +88,8 @@ public class Node {
 		while (stdIn.hasNext()) {
 
 			String message = stdIn.next();
-			try (
-				Socket socket = new Socket("127.0.0.1", CONTROLLER_PORT);
-				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			) {
-				out.println(message+";"+MY_NODE_NUM);
-				socket.close();
-				Time curTime = new Time(System.currentTimeMillis());
-				// broadcast
-				System.out.println("Broadcast \"" + message + "\", system time is " + curTime.toString() );
-				
-			} catch (UnknownHostException e) {
-				System.err.println("Unknown Host");
-			} catch (IOException e) {
-				System.err.println("Controller Connection Failure. Command Ignored.");
-				// Simply ignore the user command 
-			} 
+			client.enqueue(message);
+			
 		}
 		
 	}
