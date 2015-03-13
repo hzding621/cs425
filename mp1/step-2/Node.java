@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 import java.sql.*;
 
 public class Node {
@@ -19,6 +20,10 @@ public class Node {
 	private static HashMap<Integer, Integer> ports, delays;
 
 	public static Hashtable<Integer, Integer> store = new Hashtable<Integer, Integer>();
+
+	public final static Lock lock = new ReentrantLock();
+	public final static Condition shouldProceed = lock.newCondition();
+	public static boolean waitingForResponse = false;
 
 	public static void main(String[] args) {
 		if (args.length != 2) {
@@ -54,8 +59,6 @@ public class Node {
 				if (params[0].equals("VERBOSE")) 
 					if (Integer.parseInt(params[1]) == 0)
 						DEBUG_MODE = false;
-				if (params[0].equals("TERMINAL_DELAY"))
-					TERMINAL_DELAY = Integer.parseInt(params[1]);
 				// add more parameters here
 				line = br.readLine();
 			}
@@ -79,7 +82,7 @@ public class Node {
 		NodeServer server = new NodeServer(MY_NODE_NUM, MY_NODE_PORT, MY_MAX_DELAY, DEBUG_MODE);
 		server.start();
 
-		NodeClient client = new NodeClient(TERMINAL_DELAY, CONTROLLER_PORT, MY_NODE_NUM, DEBUG_MODE);
+		NodeClient client = new NodeClient(CONTROLLER_PORT, MY_NODE_NUM, DEBUG_MODE);
 		client.start();
 
 		// Accept user command and send to controller through socket

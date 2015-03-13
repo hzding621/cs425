@@ -31,11 +31,6 @@ public class NodeServer extends Thread {
 		}
 		String[] cmds = msg.split(" ");
 		if (cmds[0].equals("get")) {
-			if (!cmds[2].equals("1")) {
-				if (msgObject.fromNode==nodeNum)
-					System.out.println("Model "+cmds[2]+" Not Supported Yet.");
-				return;
-			}
 
 			int read = Integer.parseInt(cmds[1]);
 			int res;
@@ -45,36 +40,51 @@ public class NodeServer extends Thread {
 			else 
 				res = Node.store.get(read);
 
-			if (msgObject.fromNode==nodeNum) 
-				System.out.println("Read("+read+")="+res);
+			if (msgObject.fromNode==nodeNum) {
+				Node.lock.lock();
+				try {
+					System.out.println("Read("+read+")="+res);
+					Node.waitingForResponse = false;
+					Node.shouldProceed.signal();
+				}
+				finally {
+					Node.lock.unlock();
+				}
+			}
 		}
 		else if (cmds[0].equals("insert")) {
-			if (!cmds[3].equals("1") && !cmds[3].equals("2")) {
-				if (msgObject.fromNode==nodeNum)
-					System.out.println("Model "+cmds[3]+" Not Supported Yet.");
-				return;
-			}
-
 			int key = Integer.parseInt(cmds[1]);
 			int value = Integer.parseInt(cmds[2]);
 			Node.store.put(key, value);
 
-			if (msgObject.fromNode==nodeNum) 
-				System.out.println("Ack Insert("+key+","+value+")");
+			if (msgObject.fromNode==nodeNum) {
+				Node.lock.lock();
+				try {
+					System.out.println("Ack Insert("+key+","+value+")");
+					Node.waitingForResponse = false;
+					Node.shouldProceed.signal();
+				}
+				finally {
+					Node.lock.unlock();
+				}
+			}
 		}
 		else if (cmds[0].equals("update")) {
-			if (!cmds[3].equals("1") && !cmds[3].equals("2")) {
-				if (msgObject.fromNode==nodeNum)
-					System.out.println("Model "+cmds[3]+" Not Supported Yet.");
-				return;
-			}
-
 			int key = Integer.parseInt(cmds[1]);
 			int value = Integer.parseInt(cmds[2]);
 			Node.store.put(key, value);
 
-			if (msgObject.fromNode==nodeNum) 
-				System.out.println("Ack Update("+key+","+value+")");
+			if (msgObject.fromNode==nodeNum) {
+				Node.lock.lock();
+				try {
+					System.out.println("Ack Update("+key+","+value+")");
+					Node.waitingForResponse = false;
+					Node.shouldProceed.signal();
+				}
+				finally {
+					Node.lock.unlock();
+				}
+			}
 		}
 	}
 

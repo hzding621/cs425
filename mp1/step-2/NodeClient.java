@@ -7,13 +7,11 @@ import java.sql.*;
 public class NodeClient extends Thread {
 
 	private boolean DEBUG = true;
-	private int delay = 0;
 	private int controllerPort;
 	private int nodeNum;
 	private BlockingDeque<String> q = new LinkedBlockingDeque<String>();
 
-	public NodeClient(int d, int c, int i, boolean de) {
-		delay = d;
+	public NodeClient(int c, int i, boolean de) {
 		controllerPort = c;
 		nodeNum = i;
 		DEBUG = de;
@@ -37,8 +35,25 @@ public class NodeClient extends Thread {
 			
 			// Channel constantly tries to dequeue and apply waiting
 			try {
+
+				Node.lock.lock();
+				try {
+					while (Node.waitingForResponse) {
+						Node.shouldProceed.await();
+					}
+				} finally {
+					Node.lock.unlock();
+				}
+				
 				String message = q.takeFirst(); // this call blocks if queue is empty
 				String[] cmds = message.split(" ");
+
+				if (cmds[0].equals("delay")) {
+					float t = Float.parseFloat(cmds[1]);
+					int d = (int) (t * 1000);
+					sleep(d);
+					continue;
+				}
 
 				if (!cmds[0].equals("get") &&
 					!cmds[0].equals("insert") &&
@@ -51,10 +66,21 @@ public class NodeClient extends Thread {
 					System.out.println("Invalid get command.");
 					continue;
 				}
+
 				if (( cmds[0].equals("insert") || cmds[0].equals("update") ) && cmds.length != 4) {
 					System.out.println("Invalid insert command.");
 					continue;
 				}
+
+				if (cmds[0].equals("get") && !cmds[2].equals("1") && !cmds[2].equals("2") ) {
+					System.out.println("Model "+cmds[2]+" Not Supported Yet.");
+					continue;
+				}
+				if ( (cmds[0].equals("insert") || cmds[0].equals("update") ) && !cmds[3].equals("1") && !cmds[3].equals("2") ) {
+					System.out.println("Model "+cmds[3]+" Not Supported Yet.");
+					continue;
+				}
+				
 
 				if (cmds[0].equals("get") && cmds[2].equals("2")) {
 					// Special case: Sequential-consistency Read
@@ -73,6 +99,7 @@ public class NodeClient extends Thread {
 					Socket socket = new Socket("127.0.0.1", controllerPort);
 					PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 				) {
+					Node.waitingForResponse = true;
 					out.println(message+";"+nodeNum);
 					socket.close();
 
