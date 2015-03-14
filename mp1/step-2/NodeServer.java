@@ -15,6 +15,7 @@ public class NodeServer extends Thread {
 
 	private long queuedTimestamp = -1;
 	private int queuedValue = 0;
+	private HashMap<Integer, Boolean> hasKey = new HashMap<Integer, Boolean>();
 
 	private PriorityQueue<Message> pq = new PriorityQueue<Message>(2, new MessageComparator());
 
@@ -47,7 +48,7 @@ public class NodeServer extends Thread {
 					Node.store.remove(key);
 				}
 				if (msgObject.fromNode==nodeNum) {
-					System.out.println("Ack Delete("+key+")");
+					System.out.println("<Ack Delete("+key+")>");
 					Node.lastResponseTime = System.currentTimeMillis();
 					Node.waitingForResponse = false;
 					Node.shouldProceed.signal();
@@ -66,7 +67,7 @@ public class NodeServer extends Thread {
 
 				if (msgObject.fromNode==nodeNum) {
 					
-					System.out.println("Read("+read+")="+res);
+					System.out.println("<Read("+read+")="+res+">");
 					Node.lastResponseTime = System.currentTimeMillis();
 					Node.waitingForResponse = false;
 					Node.shouldProceed.signal();
@@ -80,7 +81,7 @@ public class NodeServer extends Thread {
 
 				if (msgObject.fromNode==nodeNum) {
 					
-					System.out.println("Ack Insert("+key+","+value+")");
+					System.out.println("<Ack Insert("+key+","+value+")>");
 					Node.lastResponseTime = System.currentTimeMillis();
 					Node.waitingForResponse = false;
 					Node.shouldProceed.signal();
@@ -94,7 +95,7 @@ public class NodeServer extends Thread {
 
 				if (msgObject.fromNode==nodeNum) {
 					
-					System.out.println("Ack Update("+key+","+value+")");
+					System.out.println("<Ack Update("+key+","+value+")>");
 					Node.lastResponseTime = System.currentTimeMillis();
 					Node.waitingForResponse = false;
 					Node.shouldProceed.signal();
@@ -102,13 +103,22 @@ public class NodeServer extends Thread {
 				}
 			}
 			
-		} else if (msgObject.model == 3 || msgObject.model == 4) {
+		} else if (msgObject.model == 3 || msgObject.model == 4 || msgObject.model == 5) {
 			if (cmds[0].equals("ack")) {
 				long t = Long.parseLong(cmds[1]);
 				
 				if (t == Node.ackTimestamp) {
 					Node.currentResponded++;
-					if (Node.responseType.equals("get")) {
+
+					if (Node.responseType.equals("search")) {
+						int fromNode = msgObject.fromNode;
+						int contains = Integer.parseInt(cmds[2]);
+						if (contains == 1)
+							hasKey.put(fromNode, true);
+						else
+							hasKey.put(fromNode, false);
+					}
+					else if (Node.responseType.equals("get")) {
 						int value = Integer.parseInt(cmds[2]);
 						long tm = Long.parseLong(cmds[3]);
 						if (tm > queuedTimestamp) {
@@ -120,12 +130,20 @@ public class NodeServer extends Thread {
 					if (Node.currentResponded == Node.needResponded) {
 
 						String output = "Should not see this.";
-						if (Node.responseType.equals("get"))
-							output = "Read("+Node.requestedKey+")="+queuedValue;
+						if (Node.responseType.equals("search")) {
+							output = "<Search("+Node.requestedKey+"): ";
+							for (int i=0; i<Node.NODE_NUM; i++)
+								if (hasKey.get(i))
+									output += (i + " ");
+								output += ">";
+							hasKey = new HashMap<Integer, Boolean>();
+						}
+						else if (Node.responseType.equals("get"))
+							output = "<Read("+Node.requestedKey+")="+queuedValue+">";
 						else if (Node.responseType.equals("insert"))
-							output = "Ack Insert("+Node.requestedKey+"," + Node.requestedValue + ")";
+							output = "<Ack Insert("+Node.requestedKey+"," + Node.requestedValue + ")>";
 						else if (Node.responseType.equals("update"))
-							output = "Ack Update("+Node.requestedKey+"," + Node.requestedValue + ")";
+							output = "<Ack Update("+Node.requestedKey+"," + Node.requestedValue + ")>";
 
 						
 						System.out.println(output);
@@ -133,6 +151,11 @@ public class NodeServer extends Thread {
 						Node.currentResponded = 0;
 						Node.needResponded = 0;
 						Node.ackTimestamp = -1;
+
+						queuedTimestamp = -1;
+						queuedValue = 0;
+
+
 						Node.shouldProceed.signal();
 						
 					}
@@ -140,10 +163,18 @@ public class NodeServer extends Thread {
 				}
 				
 				
-			} else {
+			} 
+			else {
 				int fromNode = msgObject.fromNode;
 				String response = "";
-				if (cmds[0].equals("get")) {
+				if (cmds[0].equals("search")) {
+
+					int key = Integer.parseInt(cmds[1]);
+					boolean contains = Node.store.containsKey(key);
+					response = "ack "+msgObject.dataField+" "+(contains?1:0);
+
+				}
+				else if (cmds[0].equals("get")) {
 					int key = Integer.parseInt(cmds[1]);
 					int value;
 					long tm;
@@ -240,8 +271,8 @@ public class NodeServer extends Thread {
 							if (DEBUG) System.out.println("Delay Message: " + msg.message);
 							pq.add(msg);
 						}
-					} else if (model == 3 || model == 4) {
-						// Eventual consistency
+					} else if (model == 3 || model == 4 || model == 5) {
+						// Eventual consistency or Search request
 
 						Message msg = new Message(conts[2], Long.parseLong(conts[4]),Integer.parseInt(conts[0]),model);
 						deliver(msg);

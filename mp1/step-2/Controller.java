@@ -170,7 +170,7 @@ public class Controller {
 						if (model == 1 || model == 2) {
 							sequenceNumber++;
 							message = conts[2]+";"+conts[3]+";"+sequenceNumber;
-						} else if (model == 3 || model == 4) {
+						} else if (model == 3 || model == 4 || model == 5) {
 							message = conts[2]+";"+conts[3]+";"+conts[4];
 						}
 						for (int i=0; i<NODE_NUM; i++)

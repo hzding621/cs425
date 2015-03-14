@@ -12,10 +12,14 @@ public class Node {
 	private static String config = "config.txt";
 
 	public static int CONTROLLER_PORT = 8888;
+	public static int NODE_NUM = 4;
+
 	private static int MY_NODE_PORT = - 1;
 	private static int MY_NODE_NUM = -1;
 	private static int MY_MAX_DELAY = -1;
 	private static int TERMINAL_DELAY = 0;
+
+
 
 	public static NodeServer server = null;
 	public static NodeClient client = null;
@@ -75,6 +79,8 @@ public class Node {
 				if (params[0].equals("VERBOSE")) 
 					if (Integer.parseInt(params[1]) == 0)
 						DEBUG_MODE = false;
+				if (params[0].equals("NODE_NUM"))
+					NODE_NUM = Integer.parseInt(params[1]);
 				// add more parameters here
 				line = br.readLine();
 			}
@@ -91,6 +97,14 @@ public class Node {
 			System.exit(1);
 		}
 
+
+		// Start node server thread
+		MY_NODE_PORT = ports.get(MY_NODE_NUM);
+		MY_MAX_DELAY = delays.get(MY_NODE_NUM);
+		server = new NodeServer(MY_NODE_NUM, MY_NODE_PORT, MY_MAX_DELAY, DEBUG_MODE);
+		client = new NodeClient(CONTROLLER_PORT, MY_NODE_NUM, DEBUG_MODE);
+		server.start();
+
 		try (
 			Socket socket = new Socket("127.0.0.1", CONTROLLER_PORT);
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -100,14 +114,6 @@ public class Node {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		// Start node server thread
-		MY_NODE_PORT = ports.get(MY_NODE_NUM);
-		MY_MAX_DELAY = delays.get(MY_NODE_NUM);
-		server = new NodeServer(MY_NODE_NUM, MY_NODE_PORT, MY_MAX_DELAY, DEBUG_MODE);
-		server.start();
-
-		client = new NodeClient(CONTROLLER_PORT, MY_NODE_NUM, DEBUG_MODE);
 
 		// Accept user command and send to controller through socket
 		Scanner stdIn = new Scanner(System.in);

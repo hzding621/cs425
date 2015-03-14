@@ -60,7 +60,23 @@ public class NodeClient extends Thread {
 					}
 				}
 
-				else if (!cmds[0].equals("get") && !cmds[0].equals("insert") && !cmds[0].equals("update") && !cmds[0].equals("delete")) {
+				else if (cmds[0].equals("show-all")) {
+					StringBuilder sb = new StringBuilder();
+					for (Map.Entry<Integer, Integer> e: Node.store.entrySet()) {
+						sb.append("<");
+						sb.append(e.getKey());
+						sb.append(": ");
+						sb.append(e.getValue());
+						sb.append(">\n");
+					}
+					System.out.print(sb.toString());
+				}
+
+				else if (!cmds[0].equals("get") && 
+					!cmds[0].equals("insert") && 
+					!cmds[0].equals("update") && 
+					!cmds[0].equals("delete") &&
+					!cmds[0].equals("search")) {
 					System.out.println("Unknown user command!");
 				}
 
@@ -96,6 +112,8 @@ public class NodeClient extends Thread {
 				
 					if (cmds[0].equals("delete"))
 						model = 1;
+					else if (cmds[0].equals("search"))
+						model = 5;
 					else if (cmds[0].equals("get"))
 						model = Integer.parseInt(cmds[2]);
 					else 
@@ -105,7 +123,10 @@ public class NodeClient extends Thread {
 						Node.needResponded = 1;
 					} else if (model == 4) {
 						Node.needResponded = 2;
+					} else if (model == 5) {
+						Node.needResponded = 4;
 					}
+
 					if (model == 3 || model == 4) {
 						Node.ackTimestamp = System.currentTimeMillis();
 						if (cmds[0].equals("get"))
@@ -116,15 +137,19 @@ public class NodeClient extends Thread {
 						}
 						Node.responseType = cmds[0];
 					}
+					else if (model == 5) {
+						Node.ackTimestamp = System.currentTimeMillis();
+						Node.requestedKey = Integer.parseInt(cmds[1]);
+						Node.responseType = cmds[0];
+					}
 					Node.waitingForResponse = true;
 					
-
 					try (
 						Socket socket = new Socket("127.0.0.1", controllerPort);
 						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 					) {
 						String output = nodeNum+";-1;"+message+";"+model;
-						if (model == 3 || model == 4)
+						if (model == 3 || model == 4 || model == 5)
 							output += (";"+Node.ackTimestamp);
 						out.println(output);
 						socket.close();
