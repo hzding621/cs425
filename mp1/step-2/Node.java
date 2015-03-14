@@ -26,8 +26,9 @@ public class Node {
 
 	private static HashMap<Integer, Integer> ports, delays;
 
-	public static Hashtable<Integer, Integer> store = new Hashtable<Integer, Integer>();
-	public static Hashtable<Integer, Long> timestamps = new Hashtable<Integer, Long>();
+	public final static Lock storeLock = new ReentrantLock();
+	public static HashMap<Integer, Integer> store = new HashMap<Integer, Integer>();
+	public static HashMap<Integer, Long> timestamps = new HashMap<Integer, Long>();
 
 	public final static Lock lock = new ReentrantLock();
 	public final static Condition shouldProceed = lock.newCondition();

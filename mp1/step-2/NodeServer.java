@@ -244,12 +244,44 @@ public class NodeServer extends Thread {
 
 				// Controller accpets node connection sequentially
 				try (
+					PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 					BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				) {
 					String message = in.readLine();
 					if (DEBUG) System.out.println(message);
-					socket.close();
 					String[] conts = message.split(";");
+
+					if (conts[0].equals("repair")) {
+
+						Node.storeLock.lock();
+						for (int key: Node.timestamps.keySet()) {
+							int value = Node.store.get(key);
+							long tm = Node.timestamps.get(key);
+							out.println(key+" "+value+" "+tm);
+						}
+						out.println("END");
+						
+						String line = in.readLine();
+						while (!line.equals("END")) {
+							String[] tok = line.split(" ");
+							int key = Integer.parseInt(tok[0]);
+							int value = Integer.parseInt(tok[1]);
+							long tm = Long.parseLong(tok[2]);
+							
+							Node.timestamps.put(key, tm);
+							Node.store.put(key, value);
+							
+							line = in.readLine();
+						}
+
+						Node.storeLock.unlock();
+
+						socket.close();
+						continue;
+					}
+					socket.close();
+
+
 					int model = Integer.parseInt(conts[3]);
 
 					if (model == 1 || model == 2) {

@@ -7,12 +7,15 @@ public class Controller {
 	private static String config = "config.txt";
 	private static int CONTROLLER_PORT = 8888;
 	private static int NODE_NUM = 4;
+	private static int REPAIR_INTERVAL = 30;
 
 	private static Random r = new Random();
 	public static ArrayList<ArrayList<ControllerChannel>> channels = null;
 
 	public static HashMap<Integer, Integer> ports = null;
 	public static HashMap<Integer, Integer> delays = null;
+
+	public static List<Integer> portsList = new ArrayList<Integer>();
 
 	private static long sequenceNumber = 0;
 	private static boolean fixedDelay = false;
@@ -77,6 +80,7 @@ public class Controller {
 					String[] p = params[1].split(",");
 					for (int i=0; i<p.length; i++) {
 						ports.put(i, Integer.parseInt(p[i]));
+						portsList.add(Integer.parseInt(p[i]));
 					}
 				}
 				if (params[0].equals("FIXED_DELAY")) {
@@ -87,6 +91,8 @@ public class Controller {
 					if (params[1].equals("true"))
 						selfDelay = true;
 				}
+				if (params[0].equals("REPAIR_INTERVAL"))
+					REPAIR_INTERVAL = Integer.parseInt(params[1]);
 				// add more parameters here
 				line = br.readLine();
 			}
@@ -151,6 +157,11 @@ public class Controller {
 				}
 			}
 			System.out.println(NODE_NUM+" nodes connected, ready to proceed.");
+
+
+			ControllerRepairer rp = new ControllerRepairer(portsList, REPAIR_INTERVAL);
+			rp.start();
+
 
 			while (true) {
 				Socket socket = serverSocket.accept();

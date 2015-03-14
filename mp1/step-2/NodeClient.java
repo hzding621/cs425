@@ -36,13 +36,18 @@ public class NodeClient extends Thread {
 			// Channel constantly tries to dequeue and apply waiting
 			try {
 
+				
 				Node.lock.lock();
 				while (Node.waitingForResponse) {
 					Node.shouldProceed.await();
 				}
 				Node.lock.unlock();
+
 				
 				String message = q.takeFirst(); // this call blocks if queue is empty
+
+
+				
 
 				Node.lock.lock();
 				String[] cmds = message.split(" ");
@@ -62,6 +67,7 @@ public class NodeClient extends Thread {
 
 				else if (cmds[0].equals("show-all")) {
 					StringBuilder sb = new StringBuilder();
+					Node.storeLock.lock();
 					for (Map.Entry<Integer, Integer> e: Node.store.entrySet()) {
 						sb.append("<");
 						sb.append(e.getKey());
@@ -69,7 +75,11 @@ public class NodeClient extends Thread {
 						sb.append(e.getValue());
 						sb.append(">\n");
 					}
-					System.out.print(sb.toString());
+					Node.storeLock.unlock();
+					if (sb.length() == 0)
+						System.out.println("<>");
+					else
+						System.out.print(sb.toString());
 				}
 
 				else if (!cmds[0].equals("get") && 
@@ -94,6 +104,7 @@ public class NodeClient extends Thread {
 
 				else if (cmds[0].equals("get") && cmds[2].equals("2")) {
 					// Special case: Sequential-consistency Read
+					Node.storeLock.lock();
 					int read = Integer.parseInt(cmds[1]);
 					int res;
 					if (!Node.store.containsKey(read)) {
@@ -101,6 +112,7 @@ public class NodeClient extends Thread {
 					}
 					else
 						res = Node.store.get(read);
+					Node.storeLock.unlock();
 					System.out.println("Read("+read+")="+res);
 				}
 				
@@ -169,6 +181,7 @@ public class NodeClient extends Thread {
 				}
 
 				Node.lock.unlock();
+				
 
 
 			} catch (InterruptedException e) {
