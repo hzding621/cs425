@@ -60,16 +60,20 @@ public class NodeClient extends Thread {
 					}
 				}
 
-				else if (!cmds[0].equals("get") && !cmds[0].equals("insert") && !cmds[0].equals("update")) {
+				else if (!cmds[0].equals("get") && !cmds[0].equals("insert") && !cmds[0].equals("update") && !cmds[0].equals("delete")) {
 					System.out.println("Unknown user command!");
 				}
 
+				else if (cmds[0].equals("delete") && cmds.length != 2) {
+					System.out.println("Invalid command.");
+				}
+
 				else if (cmds[0].equals("get") && cmds.length != 3) {
-					System.out.println("Invalid get command.");
+					System.out.println("Invalid command.");
 				}
 
 				else if (( cmds[0].equals("insert") || cmds[0].equals("update") ) && cmds.length != 4) {
-					System.out.println("Invalid insert command.");
+					System.out.println("Invalid command.");
 				}
 
 				else if (cmds[0].equals("get") && cmds[2].equals("2")) {
@@ -90,7 +94,9 @@ public class NodeClient extends Thread {
 				
 					int model;
 				
-					if (cmds[0].equals("get"))
+					if (cmds[0].equals("delete"))
+						model = 1;
+					else if (cmds[0].equals("get"))
 						model = Integer.parseInt(cmds[2]);
 					else 
 						model = Integer.parseInt(cmds[3]);

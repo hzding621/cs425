@@ -40,7 +40,21 @@ public class NodeServer extends Thread {
 		String[] cmds = msg.split(" ");
 		if (msgObject.model == 1 || msgObject.model == 2) {
 
-			if (cmds[0].equals("get")) {
+			if (cmds[0].equals("delete")) {
+
+				int key = Integer.parseInt(cmds[1]);
+				if (Node.store.containsKey(key)) {
+					Node.store.remove(key);
+				}
+				if (msgObject.fromNode==nodeNum) {
+					System.out.println("Ack Delete("+key+")");
+					Node.lastResponseTime = System.currentTimeMillis();
+					Node.waitingForResponse = false;
+					Node.shouldProceed.signal();
+				}
+			}
+
+			else if (cmds[0].equals("get")) {
 
 				int read = Integer.parseInt(cmds[1]);
 				int res;
