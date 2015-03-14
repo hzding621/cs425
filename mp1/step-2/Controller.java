@@ -15,10 +15,14 @@ public class Controller {
 	public static HashMap<Integer, Integer> delays = null;
 
 	private static long sequenceNumber = 0;
+	private static boolean fixedDelay = false;
+	private static boolean selfDelay = false;
 
 	public static long getRandomDelay(int fromNode, int toNode) {
-		if (fromNode == toNode)
+		if (fromNode == toNode && !selfDelay)
 			return 0;
+		else if (fixedDelay)
+			return delays.get(toNode);
 		else
 			return r.nextLong() % ( delays.get(toNode) / 2) + delays.get(toNode) / 2;
 	}
@@ -75,6 +79,14 @@ public class Controller {
 						ports.put(i, Integer.parseInt(p[i]));
 					}
 				}
+				if (params[0].equals("FIXED_DELAY")) {
+					if (params[1].equals("true"))
+						fixedDelay = true;
+				}
+				if (params[0].equals("SELF_DELAY")) {
+					if (params[1].equals("true"))
+						selfDelay = true;
+				}
 				// add more parameters here
 				line = br.readLine();
 			}
@@ -105,6 +117,41 @@ public class Controller {
 		// Listens to Node connections and enqueue messages
 		try (ServerSocket serverSocket = new ServerSocket(CONTROLLER_PORT)) { 
 			System.out.println("Controller listens at port " + CONTROLLER_PORT);
+
+			int count = 0;
+			while (count < NODE_NUM) {
+				try (
+					Socket s = serverSocket.accept();
+					BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+				) {
+					String m = in.readLine();
+					while (!m.equals("READY"))
+						m = in.readLine();
+					count++;
+					s.close();
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+			for (int i=0; i<NODE_NUM; i++) {
+				try (
+					Socket s = new Socket("127.0.0.1", ports.get(i));
+					PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+				) {
+					out.println("BEGIN");
+					s.close();
+				} catch (UnknownHostException e) {
+					System.err.println("Unknown Host");
+					System.exit(1);
+				} catch (IOException e) {
+					System.err.println("Node connection lost");
+					System.exit(1);
+				}
+			}
+			System.out.println(NODE_NUM+" nodes connected, ready to proceed.");
+
 			while (true) {
 				Socket socket = serverSocket.accept();
 

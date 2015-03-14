@@ -178,6 +178,22 @@ public class NodeServer extends Thread {
 		try (ServerSocket serverSocket = new ServerSocket(port)) { 
 			System.out.println("Node "+nodeNum+" server listens at port "+port);
 
+			try (
+				Socket s = serverSocket.accept();
+				BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+			) {
+				String m = in.readLine();
+				while (!m.equals("BEGIN"))
+					m = in.readLine();
+				s.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			System.out.println("All nodes connected, ready to proceed.");
+			Node.client.start();
+
+
 			while (true) {
 				Socket socket = serverSocket.accept();
 

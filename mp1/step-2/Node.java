@@ -17,6 +17,9 @@ public class Node {
 	private static int MY_MAX_DELAY = -1;
 	private static int TERMINAL_DELAY = 0;
 
+	public static NodeServer server = null;
+	public static NodeClient client = null;
+
 	private static HashMap<Integer, Integer> ports, delays;
 
 	public static Hashtable<Integer, Integer> store = new Hashtable<Integer, Integer>();
@@ -88,15 +91,23 @@ public class Node {
 			System.exit(1);
 		}
 
+		try (
+			Socket socket = new Socket("127.0.0.1", CONTROLLER_PORT);
+			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+		) {
+			out.println("READY");
+			socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		// Start node server thread
 		MY_NODE_PORT = ports.get(MY_NODE_NUM);
 		MY_MAX_DELAY = delays.get(MY_NODE_NUM);
-		NodeServer server = new NodeServer(MY_NODE_NUM, MY_NODE_PORT, MY_MAX_DELAY, DEBUG_MODE);
+		server = new NodeServer(MY_NODE_NUM, MY_NODE_PORT, MY_MAX_DELAY, DEBUG_MODE);
 		server.start();
 
-		NodeClient client = new NodeClient(CONTROLLER_PORT, MY_NODE_NUM, DEBUG_MODE);
-		client.start();
+		client = new NodeClient(CONTROLLER_PORT, MY_NODE_NUM, DEBUG_MODE);
 
 		// Accept user command and send to controller through socket
 		Scanner stdIn = new Scanner(System.in);
