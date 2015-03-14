@@ -7,8 +7,6 @@ File Server
 # mp1: 
 (Part1) Implementation of a delayed FIFO-channel networks. 
 (Part2) Key-Value Store of different consistency model: Linearizabiltiy, Sequential Consistency, Eventual Consistency
-
-# Usage:
 1. Make sure to compile both `Node.java` and `Controller.java` 
 2. `> javac Node.java Controller.java`
 3. Run the central server: `java CentralServer <config file>`
