@@ -5,6 +5,7 @@ Course projects for distributed systems. Implementation of common distributed al
 File Server
 
 # mp1: 
+#
 (Part1) Implementation of a delayed FIFO-channel networks. 
 (Part2) Key-Value Store of different consistency model: Linearizabiltiy, Sequential Consistency, Eventual Consistency
 #
