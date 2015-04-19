@@ -34,15 +34,35 @@ public class ChordNode extends Thread{
 
 	public void run() {
 
-		try (ServerSocket serverSocket = new ServerSocket(port)) 
+		try (
+			ServerSocket serverSocket = new ServerSocket(port);
+			
+		) 
 		{ 
 			while (true) {
-				Socket s = serverSocket.accept();
-				ChordNodeAction t = new ChordNodeAction(s, this);
-				t.start();
+				try 
+				{
+					Socket s = serverSocket.accept();
+					BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+				
+				
+					String message = in.readLine();
+					String[] messageLine = message.split(",");
+					boolean readyToLeave = messageLine[0].equals("011");
+					ChordNodeAction t = new ChordNodeAction(s, this, messageLine);
+					t.start();
+					if (readyToLeave) {
+						t.join();
+						break;
+					} else {
+						continue;
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
 			}
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}

@@ -8,23 +8,23 @@ public class ChordNodeAction extends Thread {
 	ChordNode parent;
 	Socket socket;
 	Map<Integer, ChordNodeFinger> fingers;
+	String[] messageLine;
 
 
-	public ChordNodeAction(Socket s, ChordNode parent) {
+	public ChordNodeAction(Socket s, ChordNode parent, String[] messageLine) {
 		this.parent=parent;
 		this.fingers=parent.fingers;
 		this.socket=s;
+		this.messageLine=messageLine;
 	}
 
 	public void run() {
 
 		try (
-			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			// BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 		) 
 		{
-			String message = in.readLine();
-			String[] messageLine = message.split(",");
 			if (messageLine[0].equals("000")) {
 				// JOIN 
 				int id = Integer.parseInt(messageLine[1]);
@@ -99,10 +99,17 @@ public class ChordNodeAction extends Thread {
 				}
 				System.out.println();
 				out.println("0");
+			} else if (messageLine[0].equals("011")) {
+				// LEAVE 
+				leave();
+				out.println("0");
+			} else if (messageLine[0].equals("012")) {
+				int n = locate(Integer.parseInt(messageLine[1]));
+				out.println(n);
 			}
 
 
-			socket.close();
+			// socket.close();
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -255,6 +262,12 @@ public class ChordNodeAction extends Thread {
  		}
  	}
 
+ 	public int locate(int id) {
+ 		ChordNode n = findPredecessor(id);
+ 		String res = communicate(n.get_Id(), "009");
+ 		return Integer.parseInt(res);
+ 	}
+
  	public ChordNode findSuccessor(int id) {
  		ChordNode m = findPredecessor(id);
  		ChordNode ret;
@@ -342,7 +355,7 @@ public class ChordNodeAction extends Thread {
  			// DONE
  			// predecessor.remove_node(n, i, repl);
  			if (parent.predecessor != parent)
-	 			communicate(parent.predecessor.get_Id(), "008,"+n.get_Id()+","+i+","+repl);
+	 			communicate(parent.predecessor.get_Id(), "008,"+n.get_Id()+","+i+","+repl.get_Id());
 	 		else 
 	 			remove_node(n, i, repl);
  		}
