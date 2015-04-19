@@ -4,6 +4,11 @@ import java.net.*;
 
 public class Coordinator {
 
+	private static int totalMessageCount = 0;
+	public synchronized static void incrementCount() {
+		totalMessageCount++;
+	}
+
 	private static TreeMap<Integer, ChordNode> nodeList = new TreeMap<Integer, ChordNode>();	
 	private static PrintStream outputStream = System.out;
 	public static PrintStream getOutputStream() {
@@ -47,16 +52,16 @@ public class Coordinator {
 				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			) {
+				incrementCount();
 				out.println("000,0");
 				String res = in.readLine();
 				if (res.equals("0"))
 					break;
-				
 			} catch (UnknownHostException e) {
-				e.printStackTrace();
+				// e.printStackTrace();
 				continue;
 			} catch (IOException e) {
-				e.printStackTrace();
+				// e.printStackTrace();
 				continue;	
 			}
 		}
@@ -64,9 +69,9 @@ public class Coordinator {
 
 
 		Scanner stdin = new Scanner(System.in);
-		while (stdin.hasNext()) {
-
+		while (stdin.hasNextLine()) {
 			String cmd = stdin.nextLine();
+			// System.err.println(cmd);
 			String[] ops = cmd.split(" ");
 			if (ops[0].equals("join")) {
 			
@@ -84,16 +89,17 @@ public class Coordinator {
 						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 					) {
+						incrementCount();
 						out.println("000,"+id);
 						String res = in.readLine();
 						if (res.equals("0"))
 							break;
 						
 					} catch (UnknownHostException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 						continue;
 					} catch (IOException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 						continue;	
 					}
 				}
@@ -108,6 +114,7 @@ public class Coordinator {
 								PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 								BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 							) {
+								incrementCount();
 								out.println("010");
 								String res = in.readLine();
 								if (res.equals("0"))
@@ -133,6 +140,7 @@ public class Coordinator {
 							PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 							BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 						) {
+							incrementCount();
 							out.println("010");
 							String res = in.readLine();
 							if (res.equals("0"))
@@ -158,6 +166,7 @@ public class Coordinator {
 						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 					) {
+						incrementCount();
 						out.println("011");
 						String res = in.readLine();
 						if (res.equals("0")){
@@ -167,10 +176,10 @@ public class Coordinator {
 						}
 						
 					} catch (UnknownHostException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 						continue;
 					} catch (IOException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 						continue;	
 					} catch (InterruptedException e) {
 						e.printStackTrace();
@@ -192,6 +201,7 @@ public class Coordinator {
 						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 					) {
+						incrementCount();
 						out.println("012,"+toFind);
 						String res = in.readLine();
 						int ret = Integer.parseInt(res);
@@ -199,19 +209,22 @@ public class Coordinator {
 						break;
 						
 					} catch (UnknownHostException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 						continue;
 					} catch (IOException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 						continue;	
 					} 
 				}
 				
+			} else if (ops[0].equals("count")) {
+				System.err.println(totalMessageCount);
 			}
 
 
 		}
-
+		// System.out.println("reach here");
+		System.exit(0);
 		
 	}
 

@@ -33,21 +33,26 @@ public class ChordNodeAction extends Thread {
 				} else {
 					join(Coordinator.getNode(0));
 				}
+				Coordinator.incrementCount();
 				out.println("0");
+				
 			} else if (messageLine[0].equals("001")) {
 				// FIND_SUCCESSOR
 				int id = Integer.parseInt(messageLine[1]);
 				ChordNode ret = findSuccessor(id);
+				Coordinator.incrementCount();
 				out.println(ret.get_Id());
 			} else if (messageLine[0].equals("002")) {
 				// GET_PREDECESSOR
 				ChordNode ret = parent.predecessor;
+				Coordinator.incrementCount();
 				out.println(ret.get_Id());
 			} else if (messageLine[0].equals("003")) {
 				// SET_PREDECESSOR
 				int id = Integer.parseInt(messageLine[1]);
 				ChordNode newPredecessor = Coordinator.getNode(id);
 				parent.predecessor = newPredecessor;
+				Coordinator.incrementCount();
 				out.println("0");
 			} else if (messageLine[0].equals("004")) {
 				// UPDATE_FINGER_TABLE
@@ -55,11 +60,13 @@ public class ChordNodeAction extends Thread {
 				ChordNode s = Coordinator.getNode(ss);
 				int i = Integer.parseInt(messageLine[2]);
 				updateFingerTable(s, i);
+				Coordinator.incrementCount();
 				out.println("0");
 			} else if (messageLine[0].equals("005")) {
 				// CLOSEST_PRECEDING_FINGER
 				int id = Integer.parseInt(messageLine[1]);
 				ChordNode ret = closestPrecedingFinger(id);
+				Coordinator.incrementCount();
 				out.println(ret.get_Id());
 			} else if (messageLine[0].equals("006")) {
 				// DELETE_KEYS
@@ -70,6 +77,7 @@ public class ChordNodeAction extends Thread {
 				for (int k: ret) 
 					sb.append(k+"#");
 				sb.deleteCharAt(sb.length()-1);
+				Coordinator.incrementCount();
 				out.println(sb.toString());
 			} else if (messageLine[0].equals("007")) {
 				// ADD_KEYS
@@ -79,6 +87,7 @@ public class ChordNodeAction extends Thread {
 					p.add(Integer.parseInt(lineOfKeys[i]));
 				}
 				addKeys(p);
+				Coordinator.incrementCount();
 				out.println("0");
 			} else if (messageLine[0].equals("008")) {
 				// REMOVE_NODE
@@ -86,10 +95,12 @@ public class ChordNodeAction extends Thread {
 				int p2 = Integer.parseInt(messageLine[2]);
 				ChordNode p3 = Coordinator.getNode(Integer.parseInt(messageLine[3]));
 				remove_node(p1, p2, p3);
+				Coordinator.incrementCount();
 				out.println("0");
 			} else if (messageLine[0].equals("009")) {
 				// GET_SUCCESSOR
 				int n = parent.successor().get_Id();
+				Coordinator.incrementCount();
 				out.println(n);
 			} else if (messageLine[0].equals("010")) {
 				// SHOW MY KEY
@@ -98,13 +109,16 @@ public class ChordNodeAction extends Thread {
 					Coordinator.getOutputStream().print(" "+k);
 				}
 				Coordinator.getOutputStream().println();
+				Coordinator.incrementCount();
 				out.println("0");
 			} else if (messageLine[0].equals("011")) {
 				// LEAVE 
 				leave();
+				Coordinator.incrementCount();
 				out.println("0");
 			} else if (messageLine[0].equals("012")) {
 				int n = locate(Integer.parseInt(messageLine[1]));
+				Coordinator.incrementCount();
 				out.println(n);
 			}
 
@@ -125,6 +139,7 @@ public class ChordNodeAction extends Thread {
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		) {
+			Coordinator.incrementCount();
 			out.println(message);
 			result = in.readLine();
 			
