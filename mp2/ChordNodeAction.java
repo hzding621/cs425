@@ -93,11 +93,11 @@ public class ChordNodeAction extends Thread {
 				out.println(n);
 			} else if (messageLine[0].equals("010")) {
 				// SHOW MY KEY
-				System.out.print(parent.get_Id());
+				Coordinator.getOutputStream().print(parent.get_Id());
 				for (int k: parent.keys) {
-					System.out.print(" "+k);
+					Coordinator.getOutputStream().print(" "+k);
 				}
-				System.out.println();
+				Coordinator.getOutputStream().println();
 				out.println("0");
 			} else if (messageLine[0].equals("011")) {
 				// LEAVE 

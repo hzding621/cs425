@@ -5,6 +5,10 @@ import java.net.*;
 public class Coordinator {
 
 	private static TreeMap<Integer, ChordNode> nodeList = new TreeMap<Integer, ChordNode>();	
+	private static PrintStream outputStream = System.out;
+	public static PrintStream getOutputStream() {
+		return outputStream;
+	}
 
 	private static int largestPort = 9000;
 	public static int nextPort() {
@@ -17,7 +21,47 @@ public class Coordinator {
 
 	public static void main(String[] args) {
 
-		Random r = new Random();
+		if (args.length==2 && args[0].equals("-g")) {
+			String filename = args[1];
+			try {
+				File file = new File(filename);
+				file.createNewFile();
+				outputStream = new PrintStream(file);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+				System.exit(1);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+
+		int p = nextPort();
+		ChordNode nn = new ChordNode(0, p);
+		nodeList.put(0, nn);
+		nn.start();
+		while (true) {
+
+			try (
+				Socket socket = new Socket("127.0.0.1", p);
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			) {
+				out.println("000,0");
+				String res = in.readLine();
+				if (res.equals("0"))
+					break;
+				
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+				continue;
+			} catch (IOException e) {
+				e.printStackTrace();
+				continue;	
+			}
+		}
+
+
 
 		Scanner stdin = new Scanner(System.in);
 		while (stdin.hasNext()) {
@@ -55,7 +99,27 @@ public class Coordinator {
 				}
 			} else if (ops[0].equals("show")) {
 				if (ops[1].equals("all")) {
-
+					for (int id : nodeList.keySet()) {
+						ChordNode n = getNode(id);
+						int port = n.getPort();
+						while (true) {
+							try (
+								Socket socket = new Socket("127.0.0.1", port);
+								PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+								BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+							) {
+								out.println("010");
+								String res = in.readLine();
+								if (res.equals("0"))
+									break;
+								
+							} catch (UnknownHostException e) {
+								continue;
+							} catch (IOException e) {
+								continue;	
+							}
+						}
+					}
 				} else {
 
 					int id = Integer.parseInt(ops[1]);
