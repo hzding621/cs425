@@ -108,17 +108,12 @@ class NodeClient extends Thread{
         }
         System.err.println(get_Id()+" is ready.");
     }
-    public int entry(int timeout) {
+    public int entry() {
         for (int i: Main.getVotingSet(get_Id())) {
             _parent.sendMessage(i, "REQUEST");
         }
-        long t1 = System.currentTimeMillis();
         while (true) {
-            long t2 = System.currentTimeMillis();
-            if (t2 - t1 > timeout) {
-//                System.err.println(get_Id()+" Timeout");
-                return -1;
-            }
+
             boolean ok;
             synchronized (_parent.responseSet) {
                 ok = _parent.responseSet[0] == 1 &&
@@ -148,11 +143,7 @@ class NodeClient extends Thread{
         init();
         while (true) {
 
-            int k = entry(Main.getTimeout(get_Id()));
-            if (k == -1) {
-                exitEntry();
-                continue;
-            }
+            entry();
             Time t = new Time(System.currentTimeMillis());
             System.out.println(t.toString() + " " + get_Id() + " Enter CS");
             try {
@@ -167,7 +158,6 @@ class NodeClient extends Thread{
             exitEntry();
             try {
                 Thread.sleep(Main.next_req);
-
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 System.exit(1);

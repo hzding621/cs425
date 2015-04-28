@@ -36,7 +36,7 @@ public class Main {
     public static List<Node> _nodes = new ArrayList<Node>();
 
     public static int getTimeout(int id) {
-        return (id+1) * 500;
+        return 1000;
     }
 
     public static int getPort(int id) {
