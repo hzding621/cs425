@@ -9,6 +9,11 @@ import java.io.*;
 import java.util.concurrent.*;
 import java.text.*;
 
+
+/*
+ *  Thread to handle countdown functionality
+ *  Exit the program when return from sleep
+ */
 class Countdown extends Thread{
     int seconds;
     public Countdown(int s) {
@@ -28,7 +33,7 @@ class Countdown extends Thread{
 
 public class Main {
 
-    public static final boolean DEBUG = true;
+    public static final boolean DEBUG = true;   // internal use only
     public static int cs_int;
     public static int next_req;
     public static int tot_exec_time;
@@ -41,6 +46,9 @@ public class Main {
         return 1000;
     }
 
+    /*
+     *  Print time utility function
+     */
     public final static SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
     public static String getTimeFormatted() {
 
@@ -49,10 +57,14 @@ public class Main {
         return strDate;
     }
 
+
     public static int getPort(int id) {
         return 9000 + id;
     }
     public static int[] getVotingSet(int id) {
+        // Uses voting set configuration in this paper:
+        // http://www.cse.cuhk.edu.hk/~ttwong/papers/mutex/icdcs97.pdf
+
         int[] array = {0, 1, 2, 4};
         for (int i=0; i<4; i++) {
             array[i] = ( array[i] + id ) % 9;
@@ -66,6 +78,11 @@ public class Main {
         }
         return array;
     }
+
+    /*
+     * Get the index where a the voting node "from" should be located at for node "id"
+     * return -1 if voting node is invalid
+     */
     public static int getIndex(int id, int from) {
         int i = (from + 9 - id) % 9;
         switch (i) {
@@ -90,13 +107,14 @@ public class Main {
         if (args.length == 5)
             retry_factor = Integer.parseInt(args[4]);
 
+        // Allocate all node
         for (int i=0; i<9; i++) {
             Node n = new Node(i);
             _nodes.add(n);
-            n.startServer();
+            n.startServer(); // start all servers first
         }
         for (int i=0; i<9; i++) {
-            _nodes.get(i).startClient();
+            _nodes.get(i).startClient(); // start all clients
         }
 
         Countdown c = new Countdown(tot_exec_time);

@@ -15,6 +15,7 @@ class NodeChecker extends Thread {
     public void run() {
         while (true) {
             try {
+                // Sleep for retry_factor x cs_int
                 Thread.sleep(Main.retry_factor*Main.cs_int);
             } catch (InterruptedException e) {
                 continue;
@@ -27,7 +28,7 @@ class NodeChecker extends Thread {
                 }
                 else {
                     int j = Main.getVotingSet(_parent.getId())[i];
-                    l.add(j);
+                    l.add(j); // Should yield to all grants
                 }
             }
             if (should) {
@@ -36,7 +37,7 @@ class NodeChecker extends Thread {
                             Socket s = new Socket("127.0.0.1", _parent._server._port);
                             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
                     ) {
-//                        System.out.println("FAKE INQUIRE");
+                        // Perform a fake Inquire as if it was sent from the granter
                         out.println("INQUIRE,"+j);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -72,6 +73,7 @@ class NodeServer extends Thread {
                     String mm = in.readLine();
                     String[] m = mm.split(",");
 
+                    // Print to stdout if option = 1
                     if (!m[0].equals("INIT") && Main.option == 1) {
                         String str = Main.getTimeFormatted() + " "+get_Id()+" "+m[m.length-1]+" "+m[0];
                         if (m[0].equals("REQUEST"))
@@ -90,12 +92,16 @@ class NodeServer extends Thread {
                                 Request n = new Request(from, timestamp);
                                 synchronized (_parent.responseSet) {
                                     if (_parent.granted != null) {
+                                        // always enqueue request if already granted
+                                        // then check if granted has lower priority
+                                        // if so, send Inquire to granted, otherwise do nothing
                                         _parent._pq.add(n);
                                         if (_parent.granted.compareTo(n)<0 && _parent.has_inquired == false) {
                                             _parent.sendMessage(_parent.granted._from, "INQUIRE");
                                             _parent.has_inquired = true;
                                         }
                                     } else {
+                                        // if not granted, then grant this request
                                         _parent.granted = n;
                                         _parent.sendMessage(from, "GRANT");
                                     }
@@ -109,6 +115,8 @@ class NodeServer extends Thread {
                                 break;
                             }
                             case "RELINQUISH": {
+                                // A node has yielded its grant, add back granted to the queue and dequeue the one with highest priority
+                                // Send grant to it.
                                 synchronized (_parent.responseSet) {
                                     Request o = _parent.granted;
                                     _parent._pq.add(o);
@@ -122,6 +130,8 @@ class NodeServer extends Thread {
                                 break;
                             }
                             case "INQUIRE": {
+                                // Upon receipt of Inquire, if I am not able to proceed, then yield my grant
+
                                 synchronized (_parent.responseSet) {
                                     boolean should = false;
                                     for (int i=0; i<4; i++) {
@@ -139,6 +149,8 @@ class NodeServer extends Thread {
                                 break;
                             }
                             case "RELEASE": {
+                                // Upon receipt of Release, dequeue from pq and send grant to it
+
                                 _parent.granted = null;
                                 if (_parent._pq.isEmpty() == false) {
                                     Request i = _parent._pq.poll();
@@ -171,6 +183,10 @@ class NodeClient extends Thread{
     public NodeClient(Node n) {
         _parent = n;
     }
+
+    /*
+     * Method to establish connections with all voting set servers
+     */
     public void init() {
         for (int p: Main.getVotingPort(get_Id())) {
             while (true) {
@@ -185,21 +201,22 @@ class NodeClient extends Thread{
                         break;
 
                 } catch (IOException e) {
-                    // Retry
+                    // Retry until server is connected
                 }
             }
         }
-        System.err.println(get_Id()+" is ready.");
-        _parent._checker.start();
+        _parent._checker.start(); // start the checker thread
     }
     public int entry() {
         long t = System.currentTimeMillis();
         int[] vs = Main.getVotingSet(get_Id());
         for (int i =0;i<4;i++ ) {
             int j = vs[i];
-            _parent.sendMessage(j, "REQUEST,"+t);
+            _parent.sendMessage(j, "REQUEST,"+t); // send request to all voting set
         }
         while (true) {
+            // Busy-waiting for all voting set to reply
+            // could improve here by using Conditional vars
 
             boolean ok;
             synchronized (_parent.responseSet) {
@@ -209,7 +226,6 @@ class NodeClient extends Thread{
                         _parent.responseSet[3] == 1;
             }
             if ( ok ) {
-//                Main.print(get_Id());
                 return 0;
             }
         }
@@ -230,9 +246,7 @@ class NodeClient extends Thread{
         init();
         while (true) {
 
-            entry();
-
-//            System.out.println(Main.getTimeFormatted() + " " + get_Id() + " Enter CS");
+            entry(); // call to acquire lock
             System.out.println(Main.getTimeFormatted()+" "+get_Id()+" "+_parent.getVTString());
             try {
                 Thread.sleep(Main.cs_int);
@@ -242,8 +256,7 @@ class NodeClient extends Thread{
                 System.exit(1);
             }
 
-//            System.out.println(Main.getTimeFormatted()+" "+get_Id() + " Exit CS");
-            exitEntry();
+            exitEntry(); // call to release lock
             try {
                 Thread.sleep(Main.next_req);
             } catch (InterruptedException e) {
@@ -261,6 +274,10 @@ class Request implements Comparable<Request>{
         _from = f;
         _timestamp = t;
     }
+
+    /*
+     * Method to tiebreak two request
+     */
     public int compareTo(Request o) {
         int i = o._timestamp.compareTo(_timestamp);
         if (i != 0)
@@ -273,15 +290,19 @@ class Request implements Comparable<Request>{
 public class Node {
 
     int _id;
-    NodeServer _server;
-    NodeClient _client;
-    NodeChecker _checker;
+    NodeServer _server; // server thread for receiving
+    NodeClient _client; // client thread for performing entry/exit
+    NodeChecker _checker; // checker thread for deadlock handling
 
-    Lock lock = new ReentrantLock();
-    int[] responseSet = {0,0,0,0};
-    Request granted = null;
+    int[] responseSet = {0,0,0,0}; // grants from all voting set
+    Request granted = null; // which node I am currently granting
     PriorityQueue<Request> _pq = new PriorityQueue<Request>();
     boolean has_inquired = false;
+
+    /*
+     * Handles all the message passing logic
+     * Always concatenate sender id
+     */
     public void sendMessage(int id, String message) {
         try (
                 Socket s = new Socket("127.0.0.1", Main.getPort(id));
@@ -293,6 +314,11 @@ public class Node {
             System.exit(1);
         }
     }
+
+    /*
+     * String representation of voting set
+     */
+
     public String getVTString() {
         int[] vt = Main.getVotingSet(_id);
         String s = "";
