@@ -7,7 +7,7 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 import java.util.concurrent.*;
-import java.sql.*;
+import java.text.*;
 
 class Countdown extends Thread{
     int seconds;
@@ -33,10 +33,20 @@ public class Main {
     public static int next_req;
     public static int tot_exec_time;
     public static int option;
+    public static int retry_factor = 10;
+
     public static List<Node> _nodes = new ArrayList<Node>();
 
     public static int getTimeout(int id) {
         return 1000;
+    }
+
+    public final static SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+    public static String getTimeFormatted() {
+
+        Date now = new Date();
+        String strDate = sdf.format(now);
+        return strDate;
     }
 
     public static int getPort(int id) {
@@ -64,18 +74,22 @@ public class Main {
             case 2: return 2;
             case 4: return 3;
         }
+        System.out.println(id+" "+from);
         return -1;
     }
 
     public static void main(String[] args) {
-        if (args.length != 4) {
-            System.out.println("Usage: java Main <cs_int> <next_req> <tot_exec_time> <option>");
+        if (args.length != 4 && args.length != 5) {
+            System.out.println("Usage: java Main <cs_int> <next_req> <tot_exec_time> <option> [retry_factor]");
             System.exit(1);
         }
         cs_int = Integer.parseInt(args[0]);
         next_req = Integer.parseInt(args[1]);
         tot_exec_time = Integer.parseInt(args[2]);
         option = Integer.parseInt(args[3]);
+        if (args.length == 5)
+            retry_factor = Integer.parseInt(args[4]);
+
         for (int i=0; i<9; i++) {
             Node n = new Node(i);
             _nodes.add(n);
@@ -103,7 +117,7 @@ public class Main {
         StringBuilder p = new StringBuilder();
         for (Node n : _nodes) {
             synchronized (n.responseSet) {
-                p.append(n._id+":"+n.granted+","+n.responseSet[0]+n.responseSet[1]+n.responseSet[2]+n.responseSet[3]+"\n");
+                p.append(n._id+":"+n.granted._from+","+n.responseSet[0]+n.responseSet[1]+n.responseSet[2]+n.responseSet[3]+"\n");
             }
         }
         String c = caller != -1? ""+caller : "";

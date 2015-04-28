@@ -7,6 +7,47 @@ import java.io.*;
 import java.sql.*;
 import java.util.concurrent.locks.*;
 
+class NodeChecker extends Thread {
+    Node _parent;
+    public NodeChecker(Node n) {
+        _parent = n;
+    }
+    public void run() {
+        while (true) {
+            try {
+                Thread.sleep(Main.retry_factor*Main.cs_int);
+            } catch (InterruptedException e) {
+                continue;
+            }
+            List<Integer> l = new ArrayList<Integer>();
+            boolean should = false;
+            for (int i=0; i<4; i++) {
+                if (_parent.responseSet[i] == 0) {
+                    should = true;
+                }
+                else {
+                    int j = Main.getVotingSet(_parent.getId())[i];
+                    l.add(j);
+                }
+            }
+            if (should) {
+                for (int j: l) {
+                    try (
+                            Socket s = new Socket("127.0.0.1", _parent._server._port);
+                            PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+                    ) {
+//                        System.out.println("FAKE INQUIRE");
+                        out.println("INQUIRE,"+j);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                }
+            }
+        }
+    }
+}
+
 class NodeServer extends Thread {
     Node _parent;
     int _port;
@@ -20,6 +61,7 @@ class NodeServer extends Thread {
     public void run() {
         try (
                 ServerSocket serverSocket = new ServerSocket(_port);
+
                 ) {
             while (true) {
                 try (
@@ -29,18 +71,34 @@ class NodeServer extends Thread {
                 ) {
                     String mm = in.readLine();
                     String[] m = mm.split(",");
+
+                    if (!m[0].equals("INIT") && Main.option == 1) {
+                        String str = Main.getTimeFormatted() + " "+get_Id()+" "+m[m.length-1]+" "+m[0];
+                        if (m[0].equals("REQUEST"))
+                            str += " "+m[1];
+                        System.out.println(str);
+                    }
+
                     if (m[0].equals("INIT")) {
                         out.println("READY");
                     } else {
-                        int from = Integer.parseInt(m[1]);
+                        int from = Integer.parseInt(m[m.length-1]);
                         switch (m[0]) {
                             case "REQUEST": {
-                                if (_parent.granted != -1) {
-                                    _parent.queue.add(from);
-                                    _parent.sendMessage(from, "FAIL");
-                                } else {
-                                    _parent.granted = from;
-                                    _parent.sendMessage(from, "GRANT");
+
+                                long timestamp = Long.parseLong(m[1]);
+                                Request n = new Request(from, timestamp);
+                                synchronized (_parent.responseSet) {
+                                    if (_parent.granted != null) {
+                                        _parent._pq.add(n);
+                                        if (_parent.granted.compareTo(n)<0 && _parent.has_inquired == false) {
+                                            _parent.sendMessage(_parent.granted._from, "INQUIRE");
+                                            _parent.has_inquired = true;
+                                        }
+                                    } else {
+                                        _parent.granted = n;
+                                        _parent.sendMessage(from, "GRANT");
+                                    }
                                 }
                                 break;
                             }
@@ -50,19 +108,44 @@ class NodeServer extends Thread {
                                 }
                                 break;
                             }
-                            case "FAIL": {
+                            case "RELINQUISH": {
                                 synchronized (_parent.responseSet) {
-                                    _parent.responseSet[Main.getIndex(get_Id(), from)] = 2;
+                                    Request o = _parent.granted;
+                                    _parent._pq.add(o);
+                                    Request p = _parent._pq.poll();
+
+                                    _parent.granted = p;
+                                    _parent.sendMessage(p._from, "GRANT");
+
+                                    _parent.has_inquired = false;
+                                }
+                                break;
+                            }
+                            case "INQUIRE": {
+                                synchronized (_parent.responseSet) {
+                                    boolean should = false;
+                                    for (int i=0; i<4; i++) {
+                                        if (_parent.responseSet[i] != 1) {
+                                            should = true;
+                                            break;
+                                        }
+                                    }
+                                    if (should) {
+                                        _parent.responseSet[Main.getIndex(get_Id(), from)] = 0;
+                                        _parent.sendMessage(from, "RELINQUISH");
+                                    }
+
                                 }
                                 break;
                             }
                             case "RELEASE": {
-                                _parent.granted = -1;
-                                if (_parent.queue.isEmpty() == false) {
-                                    int i = _parent.queue.remove();
+                                _parent.granted = null;
+                                if (_parent._pq.isEmpty() == false) {
+                                    Request i = _parent._pq.poll();
                                     _parent.granted = i;
-                                    _parent.sendMessage(i, "GRANT");
+                                    _parent.sendMessage(i._from, "GRANT");
                                 }
+                                _parent.has_inquired = false;
                                 break;
                             }
                         }
@@ -107,10 +190,14 @@ class NodeClient extends Thread{
             }
         }
         System.err.println(get_Id()+" is ready.");
+        _parent._checker.start();
     }
     public int entry() {
-        for (int i: Main.getVotingSet(get_Id())) {
-            _parent.sendMessage(i, "REQUEST");
+        long t = System.currentTimeMillis();
+        int[] vs = Main.getVotingSet(get_Id());
+        for (int i =0;i<4;i++ ) {
+            int j = vs[i];
+            _parent.sendMessage(j, "REQUEST,"+t);
         }
         while (true) {
 
@@ -144,8 +231,9 @@ class NodeClient extends Thread{
         while (true) {
 
             entry();
-            Time t = new Time(System.currentTimeMillis());
-            System.out.println(t.toString() + " " + get_Id() + " Enter CS");
+
+//            System.out.println(Main.getTimeFormatted() + " " + get_Id() + " Enter CS");
+            System.out.println(Main.getTimeFormatted()+" "+get_Id()+" "+_parent.getVTString());
             try {
                 Thread.sleep(Main.cs_int);
 
@@ -153,8 +241,8 @@ class NodeClient extends Thread{
                 e.printStackTrace();
                 System.exit(1);
             }
-            t = new Time(System.currentTimeMillis());
-            System.out.println(t.toString()+" "+get_Id() + " Exit CS");
+
+//            System.out.println(Main.getTimeFormatted()+" "+get_Id() + " Exit CS");
             exitEntry();
             try {
                 Thread.sleep(Main.next_req);
@@ -166,15 +254,34 @@ class NodeClient extends Thread{
     }
 }
 
+class Request implements Comparable<Request>{
+    Integer _from;
+    Long _timestamp;
+    public Request(int f, long t) {
+        _from = f;
+        _timestamp = t;
+    }
+    public int compareTo(Request o) {
+        int i = o._timestamp.compareTo(_timestamp);
+        if (i != 0)
+            return i;
+        else
+            return o._from.compareTo(_from);
+    }
+}
+
 public class Node {
 
     int _id;
     NodeServer _server;
     NodeClient _client;
+    NodeChecker _checker;
+
     Lock lock = new ReentrantLock();
     int[] responseSet = {0,0,0,0};
-    int granted = -1;
-    Queue<Integer> queue = new ArrayDeque<Integer>();
+    Request granted = null;
+    PriorityQueue<Request> _pq = new PriorityQueue<Request>();
+    boolean has_inquired = false;
     public void sendMessage(int id, String message) {
         try (
                 Socket s = new Socket("127.0.0.1", Main.getPort(id));
@@ -186,6 +293,14 @@ public class Node {
             System.exit(1);
         }
     }
+    public String getVTString() {
+        int[] vt = Main.getVotingSet(_id);
+        String s = "";
+        for (int i=0; i<4; i++) {
+            s += vt[i]+" ";
+        }
+        return s;
+    }
 
     public int getId() {
         return _id;
@@ -194,6 +309,7 @@ public class Node {
         _id = id;
         _server = new NodeServer(this, Main.getPort(id));
         _client = new NodeClient(this);
+        _checker = new NodeChecker(this);
     }
     public void startServer() {
         _server.start();
