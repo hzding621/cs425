@@ -122,7 +122,7 @@ class NodeClient extends Thread{
                         _parent.responseSet[3] == 1;
             }
             if ( ok ) {
-                Main.print(get_Id());
+//                Main.print(get_Id());
                 return 0;
             }
         }
