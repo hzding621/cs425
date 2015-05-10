@@ -278,9 +278,8 @@ public class ChordNodeAction extends Thread {
  	}
 
  	public int locate(int id) {
- 		ChordNode n = findPredecessor(id);
- 		String res = communicate(n.get_Id(), "009");
- 		return Integer.parseInt(res);
+ 		ChordNode n = findSuccessor(id);
+ 		return n.get_Id();
  	}
 
  	public ChordNode findSuccessor(int id) {
